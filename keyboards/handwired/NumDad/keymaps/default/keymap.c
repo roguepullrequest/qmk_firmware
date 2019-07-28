@@ -15,49 +15,60 @@
  */
 #include QMK_KEYBOARD_H
 
-// Defines the keycodes used by our macros in process_record_user
-enum custom_keycodes {
-  QMKBEST = SAFE_RANGE,
-  QMKURL
+typedef struct {
+	bool is_press_action;
+	int state;
+} tap;
+
+enum {
+	ESC_REST = SAFE_RANGE
 };
+
+enum {
+	SINGLE_TAP = 1,
+	SINGLE_HOLD = 2,
+};
+
+int cur_dance (qk_tap_dance_state_t *state);
+
+void esc_finished (qk_tap_dance_state_t *state);
+void esc_reset (qk_tap_dance_state_t *state);
 
 const uint16_t PROGMEM keymaps[][MATRIX_ROWS][MATRIX_COLS] = {
   [0] = LAYOUT( /* Base */
-    KC_A,  KC_1,  KC_H, \
-      KC_TAB,  KC_SPC   \
+	ESC_REST, KC_TAB, KC_EQUAL, KC_BSPC,
+
+	MT(MOD_RSFT,KC_NUMLOCK), KC_KP_SLASH, KC_KP_ASTERISK, KC_KP_MINUS,
+	KC_KP_7, KC_KP_8, KC_KP_9, 		KC_KP_PLUS,
+	KC_KP_4, KC_KP_5, KC_KP_6,
+	KC_KP_1, KC_KP_2, KC_KP_3,		KC_KP_ENTER,
+	KC_KP_0,	KC_KP_DOT
   ),
 };
 
-bool process_record_user(uint16_t keycode, keyrecord_t *record) {
-  switch (keycode) {
-    case QMKBEST:
-      if (record->event.pressed) {
-        // when keycode QMKBEST is pressed
-        SEND_STRING("QMK is the best thing ever!");
-      } else {
-        // when keycode QMKBEST is released
-      }
-      break;
-    case QMKURL:
-      if (record->event.pressed) {
-        // when keycode QMKURL is pressed
-        SEND_STRING("https://qmk.fm/" SS_TAP(X_ENTER));
-      } else {
-        // when keycode QMKURL is released
-      }
-      break;
-  }
-  return true;
+static tap esctap_state = {
+	.is_press_action = true,
+	.state = 0
+};
+
+void esc_finished (qk_tap_dance_state_t *state, void *user_data) {
+	esctap_state.state = cur_dance(state);
+	switch (esctap_state.state) {
+		case SINGLE_TAP: register_code16(KC_ESC): break;
+		case SINGLE_HOLD: reset_keyboard(); break;
+	}
 }
 
-void matrix_init_user(void) {
-
+void esc_reset (qk_tap_dance_state_t *state, void *user_data) {
+	switch (esctap_state.state) {
+		case SINGLE_TAP: unregister_code16(KC_ESC); break;
+		case SINGLE_HOLD: reset_keyboard(); break;
+	}
+	esctap_state.state = 0;
 }
 
-void matrix_scan_user(void) {
 
-}
+// TAP Dance Definition
+qk_tap_dance_action_t tap_dance_actions[] = { [ESC_REST] = ACTION_TAP_DANCE_DOUBLE(KC_ESC, RESET) };
 
-void led_set_user(uint8_t usb_led) {
-
-}
+void shutdown_user(void) { clear_keyboard(); }
