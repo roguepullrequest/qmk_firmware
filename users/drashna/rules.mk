@@ -2,6 +2,7 @@ SRC += drashna.c \
        process_records.c
 
 LINK_TIME_OPTIMIZATION_ENABLE = yes
+SPACE_CADET_ENABLE            = no
 
 ifneq ("$(wildcard $(USER_PATH)/secrets.c)","")
     SRC += secrets.c
@@ -33,6 +34,7 @@ ifeq ($(strip $(RGBLIGHT_ENABLE)), yes)
     endif
 endif
 
+RGB_MATRIX_ENABLE ?= no
 ifneq ($(strip $(RGB_MATRIX_ENABLE)), no)
     SRC += rgb_stuff.c
 endif
